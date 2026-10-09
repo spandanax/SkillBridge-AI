@@ -1,0 +1,43 @@
+const express = require('express');
+const LearningResource = require('../models/LearningResource');
+
+const router = express.Router();
+
+// @GET /api/resources - Searchable, filterable resource library
+router.get('/', async (req, res) => {
+  try {
+    const { search, type, difficulty, career, skill, free } = req.query;
+    let query = { isActive: true };
+
+    if (search) {
+      query.$or = [
+        { title: { $regex: search, $options: 'i' } },
+        { description: { $regex: search, $options: 'i' } },
+        { skills: { $in: [new RegExp(search, 'i')] } },
+      ];
+    }
+    if (type) query.resourceType = type;
+    if (difficulty) query.difficulty = difficulty;
+    if (career) query.careerGoals = { $in: [career] };
+    if (skill) query.skills = { $in: [new RegExp(skill, 'i')] };
+    if (free === 'true') query.isFree = true;
+
+    const resources = await LearningResource.find(query).sort({ rating: -1 });
+    res.json({ success: true, resources, total: resources.length });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch resources.' });
+  }
+});
+
+// @GET /api/resources/:id
+router.get('/:id', async (req, res) => {
+  try {
+    const resource = await LearningResource.findById(req.params.id);
+    if (!resource) return res.status(404).json({ success: false, message: 'Resource not found.' });
+    res.json({ success: true, resource });
+  } catch (err) {
+    res.status(500).json({ success: false, message: 'Failed to fetch resource.' });
+  }
+});
+
+module.exports = router;
