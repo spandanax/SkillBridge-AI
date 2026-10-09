@@ -35,11 +35,12 @@ export default function DashboardHome() {
   const { user } = useAuth();
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [backendError, setBackendError] = useState(false);
 
   useEffect(() => {
     progressAPI.getDashboard()
-      .then(res => setData(res.data.dashboard))
-      .catch(() => {}) // silent — show empty state
+      .then(res => { setData(res.data.dashboard); setBackendError(false); })
+      .catch(() => { setBackendError(true); })
       .finally(() => setLoading(false));
   }, []);
 
@@ -223,19 +224,21 @@ export default function DashboardHome() {
         </div>
       </div>
 
-      {/* No backend notice */}
-      <div className="card border-yellow-500/20 bg-yellow-500/5">
-        <div className="flex items-start gap-3">
-          <AlertCircle size={18} className="text-yellow-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="text-yellow-300 text-sm font-medium">Backend Required</p>
-            <p className="text-slate-400 text-xs mt-0.5">
-              This dashboard pulls live data from the backend. Make sure MongoDB is connected and the backend is running on port 5000.
-              Run <code className="bg-white/10 px-1 rounded text-xs">npm run seed</code> in the backend folder to populate sample data.
-            </p>
+      {/* Show backend notice only when API is unreachable */}
+      {backendError && (
+        <div className="card border-yellow-500/20 bg-yellow-500/5">
+          <div className="flex items-start gap-3">
+            <AlertCircle size={18} className="text-yellow-400 flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-yellow-300 text-sm font-medium">Backend Required</p>
+              <p className="text-slate-400 text-xs mt-0.5">
+                This dashboard pulls live data from the backend. Make sure MongoDB is connected and the backend is running on port 5000.
+                Run <code className="bg-white/10 px-1 rounded text-xs">npm run seed</code> in the backend folder to populate sample data.
+              </p>
+            </div>
           </div>
         </div>
-      </div>
+      )}
     </div>
   );
 }
