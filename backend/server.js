@@ -59,6 +59,102 @@ const connectDB = async () => {
 
 connectDB();
 
+// Root landing for browser visits
+app.get('/', (req, res) => {
+  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:5173';
+  if (req.accepts('html')) {
+    return res.send(`
+      <!DOCTYPE html>
+      <html lang="en">
+      <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>SkillBridge AI - Backend API</title>
+        <style>
+          body {
+            margin: 0;
+            padding: 0;
+            background: #0b0f19;
+            color: #f1f5f9;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+          }
+          .card {
+            background: rgba(30, 41, 59, 0.7);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(12px);
+            padding: 2.5rem;
+            border-radius: 1.25rem;
+            max-width: 480px;
+            width: 90%;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+          }
+          .badge {
+            display: inline-block;
+            background: rgba(16, 185, 129, 0.15);
+            color: #34d399;
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            padding: 0.25rem 0.75rem;
+            border-radius: 9999px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+          }
+          h1 {
+            font-size: 1.5rem;
+            margin: 0 0 0.5rem 0;
+            color: #ffffff;
+          }
+          p {
+            color: #94a3b8;
+            font-size: 0.95rem;
+            line-height: 1.5;
+            margin-bottom: 1.75rem;
+          }
+          .btn {
+            display: inline-block;
+            background: linear-gradient(135deg, #6366f1, #4f46e5);
+            color: #ffffff;
+            text-decoration: none;
+            padding: 0.75rem 1.5rem;
+            border-radius: 0.75rem;
+            font-weight: 600;
+            font-size: 0.95rem;
+            box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.3);
+            transition: transform 0.2s, box-shadow 0.2s;
+          }
+          .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 20px -3px rgba(99, 102, 241, 0.4);
+          }
+        </style>
+      </head>
+      <body>
+        <div class="card">
+          <div class="badge">● Backend Online & MongoDB Connected</div>
+          <h1>SkillBridge AI - Backend API</h1>
+          <p>
+            You are currently on <strong>Port 5000</strong> (the Backend API server).<br/>
+            The full interactive web application is running on <strong>Port 5173</strong>.
+          </p>
+          <a class="btn" href="${frontendUrl}">Open SkillBridge Web App ➔</a>
+        </div>
+      </body>
+      </html>
+    `);
+  }
+  res.json({
+    success: true,
+    message: 'SkillBridge AI Backend API running',
+    frontendUrl,
+    health: '/api/health',
+  });
+});
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({
