@@ -54,7 +54,7 @@ export default function LoginPage() {
               <input
                 id="login-email"
                 type="email"
-                autoComplete="email"
+                autoComplete="off"
                 placeholder="you@example.com"
                 className="input-field"
                 value={form.email}

@@ -12,12 +12,23 @@ export const AuthProvider = ({ children }) => {
     const saved = localStorage.getItem('sb_user');
     if (token && saved) {
       try {
-        setUser(JSON.parse(saved));
-        // Verify token with backend
+        const parsedUser = JSON.parse(saved);
+        setUser(parsedUser);
+        setLoading(false);
+
+        // Verify token in background
         authAPI.me()
-          .then(res => setUser(res.data.user))
-          .catch(() => logout())
-          .finally(() => setLoading(false));
+          .then(res => {
+            if (res.data?.user) {
+              setUser(res.data.user);
+              localStorage.setItem('sb_user', JSON.stringify(res.data.user));
+            }
+          })
+          .catch(err => {
+            if (err.response?.status === 401) {
+              logout();
+            }
+          });
       } catch {
         setLoading(false);
       }
