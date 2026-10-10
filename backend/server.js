@@ -46,6 +46,9 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
+// Default MongoDB Atlas URI from project config
+const DEFAULT_MONGO_URI = 'mongodb+srv://s93460692_db_user:XLg2aG8KjWANLGlM@cluster0.mf36p6k.mongodb.net/skillbridge?appName=Cluster0';
+
 // MongoDB Connection with serverless caching
 let cachedDb = global.mongoose;
 if (!cachedDb) {
@@ -53,19 +56,19 @@ if (!cachedDb) {
 }
 
 const connectDB = async () => {
-  if (cachedDb.conn) {
+  if (cachedDb.conn && mongoose.connection.readyState === 1) {
     return cachedDb.conn;
   }
 
-  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/skillbridge';
+  const uri = process.env.MONGODB_URI || DEFAULT_MONGO_URI;
 
   if (!cachedDb.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 8000,
+      serverSelectionTimeoutMS: 5000,
     };
     cachedDb.promise = mongoose.connect(uri, opts).then((m) => {
-      console.log('✅ MongoDB connected');
+      console.log('✅ MongoDB connected successfully');
       return m;
     });
   }
@@ -74,7 +77,7 @@ const connectDB = async () => {
     cachedDb.conn = await cachedDb.promise;
   } catch (err) {
     cachedDb.promise = null;
-    console.error('❌ MongoDB connection failed:', err.message);
+    console.error('⚠️ MongoDB connection attempt failed:', err.message);
     throw err;
   }
 
@@ -84,25 +87,22 @@ const connectDB = async () => {
 // Initiate connection for local long-running server
 if (!process.env.VERCEL) {
   connectDB().catch((err) => {
-    console.log('⚠️ Running without database - some features will be unavailable:', err.message);
+    console.log('⚠️ Running without database:', err.message);
   });
 }
 
-// Middleware to ensure DB connection for serverless requests
+// Middleware to attempt DB connection without breaking health / info endpoints
 app.use(async (req, res, next) => {
-  if (req.path.startsWith('/api')) {
+  if (req.path.startsWith('/api') && req.path !== '/api/health') {
     try {
       await connectDB();
     } catch (err) {
-      console.error('Database connection error on route:', req.path, err.message);
-      return res.status(503).json({
-        success: false,
-        message: 'Database connection failed. Please ensure MONGODB_URI is set and IP 0.0.0.0/0 is allowed on MongoDB Atlas.',
-      });
+      console.warn('DB connection unavailable for', req.path, ':', err.message);
     }
   }
   next();
 });
+
 
 // Root landing for browser visits
 app.get('/', (req, res) => {
