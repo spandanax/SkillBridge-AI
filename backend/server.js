@@ -64,8 +64,10 @@ const connectDB = async () => {
 
   if (!cachedDb.promise) {
     const opts = {
-      bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
+      bufferCommands: true,
+      serverSelectionTimeoutMS: 10000,
+      connectTimeoutMS: 10000,
+      socketTimeoutMS: 45000,
     };
     cachedDb.promise = mongoose.connect(uri, opts).then((m) => {
       console.log('✅ MongoDB connected successfully');
@@ -91,13 +93,14 @@ if (!process.env.VERCEL) {
   });
 }
 
-// Middleware to attempt DB connection without breaking health / info endpoints
+// Middleware to ensure DB is connected before any API route
 app.use(async (req, res, next) => {
   if (req.path.startsWith('/api') && req.path !== '/api/health') {
     try {
       await connectDB();
     } catch (err) {
       console.warn('DB connection unavailable for', req.path, ':', err.message);
+      return res.status(503).json({ success: false, message: 'Database temporarily unavailable. Please try again.' });
     }
   }
   next();
