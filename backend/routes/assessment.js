@@ -138,18 +138,31 @@ router.get('/gap-analysis', protect, async (req, res) => {
   try {
     let assessment = null;
     if (mongoose.connection.readyState === 1) {
-      assessment = await SkillAssessment.findOne({ user: req.user._id }).sort({ createdAt: -1 });
+      try {
+        assessment = await SkillAssessment.findOne({ user: req.user._id }).sort({ createdAt: -1 });
+      } catch (e) {}
     }
 
-    if (!assessment) {
-      return res.status(404).json({ success: false, message: 'Please complete an assessment first.' });
+    let careerGoal = assessment?.careerGoal;
+    if (!careerGoal) {
+      try {
+        const StudentProfile = require('../models/StudentProfile');
+        if (mongoose.connection.readyState === 1) {
+          const profile = await StudentProfile.findOne({ user: req.user._id });
+          if (profile?.preferredCareer) careerGoal = profile.preferredCareer;
+        }
+      } catch (e) {}
     }
 
-    let requiredSkills = DEFAULT_CAREER_SKILLS[assessment.careerGoal] || DEFAULT_CAREER_SKILLS['Cybersecurity Analyst'];
+    if (!careerGoal) {
+      careerGoal = 'Cybersecurity Analyst';
+    }
+
+    let requiredSkills = DEFAULT_CAREER_SKILLS[careerGoal] || DEFAULT_CAREER_SKILLS['Cybersecurity Analyst'];
 
     try {
       if (mongoose.connection.readyState === 1) {
-        const career = await Career.findOne({ name: assessment.careerGoal });
+        const career = await Career.findOne({ name: careerGoal });
         if (career && career.requiredSkills && career.requiredSkills.length > 0) {
           requiredSkills = career.requiredSkills;
         }
@@ -159,7 +172,7 @@ router.get('/gap-analysis', protect, async (req, res) => {
     }
 
     const userSkillMap = {};
-    (assessment.skillRatings || []).forEach(s => {
+    (assessment?.skillRatings || []).forEach(s => {
       userSkillMap[(s.skillName || '').toLowerCase()] = Number(s.proficiency) || 0;
     });
 
@@ -192,15 +205,15 @@ router.get('/gap-analysis', protect, async (req, res) => {
     res.json({
       success: true,
       gapAnalysis: {
-        careerGoal: assessment.careerGoal,
+        careerGoal,
         readinessScore,
         disclaimer: 'This score is an estimate based on self-reported skill ratings and configured career requirements. It is not a guarantee of employment readiness.',
         strong,
         improve,
         missing,
         all: analysis,
-        overallScore: assessment.overallScore || readinessScore,
-        readinessLevel: assessment.readinessLevel || 'Intermediate',
+        overallScore: assessment?.overallScore ?? readinessScore,
+        readinessLevel: assessment?.readinessLevel || (readinessScore >= 60 ? 'Advanced' : readinessScore >= 30 ? 'Intermediate' : 'Beginner'),
       },
     });
   } catch (err) {
