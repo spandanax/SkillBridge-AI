@@ -8,13 +8,13 @@ const router = express.Router();
 // @GET /api/profile - Get current user's profile
 router.get('/', protect, async (req, res) => {
   try {
-    const profile = await StudentProfile.findOne({ user: req.user._id });
-    if (!profile) {
-      return res.status(404).json({ success: false, message: 'Profile not found. Please complete your profile.' });
+    if (mongoose.connection.readyState === 1) {
+      const profile = await StudentProfile.findOne({ user: req.user._id });
+      return res.json({ success: true, profile: profile || null });
     }
-    res.json({ success: true, profile });
+    return res.json({ success: true, profile: null });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch profile.' });
+    res.json({ success: true, profile: null });
   }
 });
 

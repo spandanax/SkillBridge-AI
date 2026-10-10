@@ -1,5 +1,8 @@
 const jwt = require('jsonwebtoken');
+const mongoose = require('mongoose');
 const User = require('../models/User');
+
+const JWT_SECRET = process.env.JWT_SECRET || 'skillbridge_dev_secret_key_2024';
 
 const protect = async (req, res, next) => {
   try {
@@ -16,7 +19,7 @@ const protect = async (req, res, next) => {
       });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET || 'skillbridge_dev_secret_key_2024');
+    const decoded = jwt.verify(token, JWT_SECRET);
     
     let user = null;
     try {
@@ -44,7 +47,7 @@ const protect = async (req, res, next) => {
 const generateToken = (userId) => {
   return jwt.sign(
     { id: userId },
-    process.env.JWT_SECRET || 'fallback_secret',
+    JWT_SECRET,
     { expiresIn: process.env.JWT_EXPIRES_IN || '7d' }
   );
 };
