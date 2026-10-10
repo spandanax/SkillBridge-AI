@@ -21,17 +21,21 @@ const protect = async (req, res, next) => {
 
     const decoded = jwt.verify(token, JWT_SECRET);
     
+    const safeObjectId = mongoose.Types.ObjectId.isValid(decoded.id)
+      ? new mongoose.Types.ObjectId(decoded.id)
+      : new mongoose.Types.ObjectId();
+
     let user = null;
     try {
       if (mongoose.connection.readyState === 1) {
-        user = await User.findById(decoded.id);
+        user = await User.findById(safeObjectId);
       }
     } catch (e) {
       // Fallback below
     }
 
     if (!user) {
-      user = { _id: decoded.id, id: decoded.id, name: 'Student', email: 'student@skillbridge.ai' };
+      user = { _id: safeObjectId, id: safeObjectId.toHexString(), name: 'Student', email: 'student@skillbridge.ai' };
     }
 
     req.user = user;

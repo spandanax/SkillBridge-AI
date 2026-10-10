@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Project = require('../models/Project');
 const Progress = require('../models/Progress');
 const SkillAssessment = require('../models/SkillAssessment');

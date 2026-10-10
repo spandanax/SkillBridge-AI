@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const Career = require('../models/Career');
 const { protect } = require('../middleware/auth');
 

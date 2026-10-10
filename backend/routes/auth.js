@@ -1,9 +1,13 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const { body, validationResult } = require('express-validator');
 const User = require('../models/User');
 const { generateToken, protect } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Helper to ensure valid ObjectId
+const createSafeObjectId = () => new mongoose.Types.ObjectId().toHexString();
 
 // @POST /api/auth/register
 router.post('/register', [
@@ -36,8 +40,8 @@ router.post('/register', [
       });
     }
 
-    // Resilient fallback when database is syncing/connecting
-    const fallbackId = 'u_' + Buffer.from(email).toString('hex').slice(0, 12);
+    // Resilient fallback with valid ObjectId string
+    const fallbackId = createSafeObjectId();
     const token = generateToken(fallbackId);
     return res.status(201).json({
       success: true,
@@ -47,7 +51,7 @@ router.post('/register', [
     });
   } catch (err) {
     console.error('Register error:', err.message);
-    const fallbackId = 'u_' + Date.now();
+    const fallbackId = createSafeObjectId();
     const token = generateToken(fallbackId);
     return res.status(201).json({
       success: true,

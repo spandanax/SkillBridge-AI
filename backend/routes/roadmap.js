@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const LearningRoadmap = require('../models/LearningRoadmap');
 const SkillAssessment = require('../models/SkillAssessment');
 const Career = require('../models/Career');
@@ -31,13 +32,13 @@ const generateRoadmapItems = (gapSkills, resources) => {
 // @GET /api/roadmap - Get user's roadmap
 router.get('/', protect, async (req, res) => {
   try {
-    const roadmap = await LearningRoadmap.findOne({ user: req.user._id });
-    if (!roadmap) {
-      return res.status(404).json({ success: false, message: 'No roadmap found. Generate one from your assessment.' });
+    if (mongoose.connection.readyState === 1) {
+      const roadmap = await LearningRoadmap.findOne({ user: req.user._id });
+      return res.json({ success: true, roadmap: roadmap || null });
     }
-    res.json({ success: true, roadmap });
+    return res.json({ success: true, roadmap: null });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch roadmap.' });
+    res.json({ success: true, roadmap: null });
   }
 });
 

@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const SkillAssessment = require('../models/SkillAssessment');
 const Career = require('../models/Career');
 const { protect } = require('../middleware/auth');
@@ -8,13 +9,13 @@ const router = express.Router();
 // @GET /api/assessment - Get user's latest assessment
 router.get('/', protect, async (req, res) => {
   try {
-    const assessment = await SkillAssessment.findOne({ user: req.user._id }).sort({ createdAt: -1 });
-    if (!assessment) {
-      return res.status(404).json({ success: false, message: 'No assessment found.' });
+    if (mongoose.connection.readyState === 1) {
+      const assessment = await SkillAssessment.findOne({ user: req.user._id }).sort({ createdAt: -1 });
+      return res.json({ success: true, assessment: assessment || null });
     }
-    res.json({ success: true, assessment });
+    return res.json({ success: true, assessment: null });
   } catch (err) {
-    res.status(500).json({ success: false, message: 'Failed to fetch assessment.' });
+    res.json({ success: true, assessment: null });
   }
 });
 

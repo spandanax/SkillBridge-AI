@@ -1,4 +1,5 @@
 const express = require('express');
+const mongoose = require('mongoose');
 const { LearningGoal, Notification } = require('../models/Goals');
 const { protect } = require('../middleware/auth');
 
