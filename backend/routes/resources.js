@@ -7,6 +7,7 @@ const router = express.Router();
 // @GET /api/resources - Searchable, filterable resource library
 router.get('/', async (req, res) => {
   try {
+
     const { search, type, difficulty, career, skill, free } = req.query;
     let query = { isActive: true };
 

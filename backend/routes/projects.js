@@ -10,9 +10,7 @@ const router = express.Router();
 // @GET /api/projects - Get recommended projects for user
 router.get('/', protect, async (req, res) => {
   try {
-    if (mongoose.connection.readyState !== 1) {
-      return res.json({ success: true, projects: [], careerGoal: null });
-    }
+
 
     const { difficulty, career } = req.query;
 
