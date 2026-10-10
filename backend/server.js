@@ -46,18 +46,63 @@ if (process.env.NODE_ENV !== 'test') {
   app.use(morgan('dev'));
 }
 
-// MongoDB Connection
+// MongoDB Connection with serverless caching
+let cachedDb = global.mongoose;
+if (!cachedDb) {
+  cachedDb = global.mongoose = { conn: null, promise: null };
+}
+
 const connectDB = async () => {
-  try {
-    await mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/skillbridge');
-    console.log('✅ MongoDB connected');
-  } catch (err) {
-    console.error('❌ MongoDB connection failed:', err.message);
-    console.log('⚠️  Running without database - some features will be unavailable');
+  if (cachedDb.conn) {
+    return cachedDb.conn;
   }
+
+  const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/skillbridge';
+
+  if (!cachedDb.promise) {
+    const opts = {
+      bufferCommands: false,
+      serverSelectionTimeoutMS: 8000,
+    };
+    cachedDb.promise = mongoose.connect(uri, opts).then((m) => {
+      console.log('✅ MongoDB connected');
+      return m;
+    });
+  }
+
+  try {
+    cachedDb.conn = await cachedDb.promise;
+  } catch (err) {
+    cachedDb.promise = null;
+    console.error('❌ MongoDB connection failed:', err.message);
+    throw err;
+  }
+
+  return cachedDb.conn;
 };
 
-connectDB();
+// Initiate connection for local long-running server
+if (!process.env.VERCEL) {
+  connectDB().catch((err) => {
+    console.log('⚠️ Running without database - some features will be unavailable:', err.message);
+  });
+}
+
+// Middleware to ensure DB connection for serverless requests
+app.use(async (req, res, next) => {
+  if (req.path.startsWith('/api')) {
+    try {
+      await connectDB();
+    } catch (err) {
+      console.error('Database connection error on route:', req.path, err.message);
+      return res.status(503).json({
+        success: false,
+        message: 'Database connection failed. Please ensure MONGODB_URI is set and IP 0.0.0.0/0 is allowed on MongoDB Atlas.',
+      });
+    }
+  }
+  next();
+});
 
 // Root landing for browser visits
 app.get('/', (req, res) => {
