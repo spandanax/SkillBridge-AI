@@ -205,6 +205,8 @@ app.get('/api/health', (req, res) => {
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
+    hasMongoUri: Boolean(process.env.MONGODB_URI),
+    mongoUriPrefix: process.env.MONGODB_URI ? process.env.MONGODB_URI.substring(0, 15) + '...' : 'NOT_SET',
     dbStatus: mongoose.connection.readyState === 1 ? 'connected' : 'disconnected',
   });
 });
