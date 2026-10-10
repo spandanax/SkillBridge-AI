@@ -10,6 +10,21 @@ const router = express.Router();
 // @GET /api/progress - Full dashboard data
 router.get('/', protect, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.json({
+        success: true,
+        dashboard: {
+          careerGoal: null,
+          skillsAssessed: false,
+          readinessScore: 0,
+          roadmapProgress: { completed: 0, total: 0 },
+          projects: { inProgress: 0, completed: 0 },
+          weeklyActivity: [],
+          achievements: [],
+        }
+      });
+    }
+
     const [progress, assessment, roadmap] = await Promise.all([
       Progress.findOne({ user: req.user._id }).populate('savedProjects.project'),
       SkillAssessment.findOne({ user: req.user._id }).sort({ createdAt: -1 }),

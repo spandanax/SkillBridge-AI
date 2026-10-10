@@ -10,6 +10,10 @@ const router = express.Router();
 // @GET /api/projects - Get recommended projects for user
 router.get('/', protect, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.json({ success: true, projects: [], careerGoal: null });
+    }
+
     const { difficulty, career } = req.query;
 
     // Get user's career goal from assessment
@@ -20,7 +24,14 @@ router.get('/', protect, async (req, res) => {
     if (difficulty) query.difficulty = difficulty;
     if (careerGoal) query.careerGoals = { $in: [careerGoal] };
 
-    const projects = await Project.find(query).sort({ difficulty: 1 });
+    let projects = await Project.find(query).sort({ difficulty: 1 });
+
+    // Fallback: If no projects found for specific career, show all projects
+    if (projects.length === 0 && careerGoal) {
+      const fallbackQuery = { isActive: true };
+      if (difficulty) fallbackQuery.difficulty = difficulty;
+      projects = await Project.find(fallbackQuery).sort({ difficulty: 1 });
+    }
 
     // Get user's saved projects
     const progress = await Progress.findOne({ user: req.user._id });

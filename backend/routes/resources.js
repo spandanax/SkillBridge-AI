@@ -23,7 +23,17 @@ router.get('/', async (req, res) => {
     if (skill) query.skills = { $in: [new RegExp(skill, 'i')] };
     if (free === 'true') query.isFree = true;
 
-    const resources = await LearningResource.find(query).sort({ rating: -1 });
+    let resources = await LearningResource.find(query).sort({ rating: -1 });
+
+    // Fallback: If no resources found for specific career/skill, show all resources
+    if (resources.length === 0 && (career || skill)) {
+      const fallbackQuery = { isActive: true };
+      if (type) fallbackQuery.resourceType = type;
+      if (difficulty) fallbackQuery.difficulty = difficulty;
+      if (free === 'true') fallbackQuery.isFree = true;
+      resources = await LearningResource.find(fallbackQuery).sort({ rating: -1 });
+    }
+
     res.json({ success: true, resources, total: resources.length });
   } catch (err) {
     res.status(500).json({ success: false, message: 'Failed to fetch resources.' });

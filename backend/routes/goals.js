@@ -10,6 +10,9 @@ const router = express.Router();
 // @GET /api/goals - Get user's goals
 router.get('/', protect, async (req, res) => {
   try {
+    if (mongoose.connection.readyState !== 1) {
+      return res.json({ success: true, goals: [] });
+    }
     const goals = await LearningGoal.find({ user: req.user._id }).sort({ createdAt: -1 });
     res.json({ success: true, goals });
   } catch (err) {
